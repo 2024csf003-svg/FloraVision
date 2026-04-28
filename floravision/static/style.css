@@ -114,5 +114,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .toast.error .toast-icon { color: var(--accent-tertiary); }
 @keyframes toastIn { from { opacity: 0; transform: translateX(80px); } to { opacity: 1; transform: translateX(0); } }
 
+.species-gallery-section { padding: 3rem 2.5rem; max-width: 1300px; margin: 0 auto; border-top: 1px solid var(--border-subtle); }
+.gallery-header { margin-bottom: 2rem; }
+.gallery-header h2 { font-size: 1.5rem; color: var(--accent-primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
+.gallery-header p { color: var(--text-muted); font-size: 0.9rem; }
+.species-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.25rem; }
+.species-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 1rem; overflow: hidden; transition: all 0.3s; }
+.species-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); box-shadow: 0 10px 25px rgba(0, 255, 136, 0.15); }
+.species-img-wrapper { height: 160px; overflow: hidden; background: var(--bg-surface); }
+.species-img-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+.species-card:hover .species-img-wrapper img { transform: scale(1.1); }
+.species-info { padding: 1rem; text-align: center; }
+.species-info h4 { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); text-transform: capitalize; }
+
 @media (max-width: 1024px) { .classifier-main { grid-template-columns: 1fr 1fr; } .history-sidebar { grid-column: span 2; } }
-@media (max-width: 768px) { .classifier-main { grid-template-columns: 1fr; } .features { grid-template-columns: 1fr; } .welcome-card { padding: 2.5rem 1.75rem; } .history-sidebar { grid-column: span 1; } .logo h1 { font-size: 2rem; } }
+@media (max-width: 768px) { .classifier-main { grid-template-columns: 1fr; } .features { grid-template-columns: 1fr; } .welcome-card { padding: 2.5rem 1.75rem; } .history-sidebar { grid-column: span 1; } .logo h1 { font-size: 2rem; } .species-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }

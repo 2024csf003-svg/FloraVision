@@ -88,6 +88,17 @@
         </aside>
     </main>
 
+    <section class="species-gallery-section">
+        <div class="gallery-header">
+            <h2><i class="fas fa-th"></i> Supported Species</h2>
+            <p>Explore the 25 flower species our AI can recognize</p>
+        </div>
+        <div class="species-grid" id="speciesGrid">
+            <!-- Loaded via JS -->
+        </div>
+    </section>
+
+
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
@@ -279,6 +290,36 @@
 
             resultsContainer.innerHTML = html;
         }
+
+        async function loadSpeciesGallery() {
+            try {
+                const response = await fetch('/classes');
+                const data = await response.json();
+                const grid = document.getElementById('speciesGrid');
+                
+                let html = '';
+                data.classes.forEach(flower => {
+                    const cleanName = flower.toLowerCase().replace(/ /g, '_');
+                    const imgPath = `/static/flowers/${cleanName}.jpg`;
+                    
+                    html += `
+                        <div class="species-card">
+                            <div class="species-img-wrapper">
+                                <img src="${imgPath}" alt="${flower}" onerror="this.src='https://via.placeholder.com/200x200?text=${flower}'">
+                            </div>
+                            <div class="species-info">
+                                <h4>${flower}</h4>
+                            </div>
+                        </div>
+                    `;
+                });
+                grid.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading species:', error);
+            }
+        }
+
+        loadSpeciesGallery();
     </script>
 </body>
 </html>
