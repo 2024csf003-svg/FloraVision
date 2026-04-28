@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloraVision - Classifier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="classifier-bg">
+        <div class="gradient-waves">
+            <div class="wave wave-1"></div>
+            <div class="wave wave-2"></div>
+        </div>
+    </div>
+
+    <header class="classifier-header">
+        <a href="/" class="logo-link">
+            <span>FloraVision</span>
+        </a>
+        <nav>
+            <span class="nav-link"><i class="fas fa-camera"></i> Identify</span>
+        </nav>
+    </header>
+        <nav>
+            <span class="nav-link"><i class="fas fa-camera"></i> Identify</span>
+        </nav>
+    </header>
+
+    <main class="classifier-main">
+        <div class="upload-section">
+            <div class="upload-zone" id="dropZone">
+                <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif" hidden>
+                <div class="upload-content" id="uploadContent">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Drop flower image here</h3>
+                    <p>JPG, PNG, WebP, GIF • Max 5MB</p>
+                </div>
+                <div class="preview-container" id="previewContainer" style="display: none;">
+                    <img id="imagePreview" src="" alt="Preview">
+                    <button class="remove-btn" id="removeBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button class="identify-btn" id="identifyBtn">
+                <span>Identify Flower</span>
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+
+        <div class="results-section">
+            <h2>Results</h2>
+            <div class="results-container" id="resultsContainer">
+                <div class="placeholder-results">
+                    <i class="fas fa-leaf"></i>
+                    <p>Upload an image to identify your flower</p>
+                </div>
+            </div>
+        </div>
+
+        <aside class="history-sidebar">
+            <h3><i class="fas fa-history"></i> History</h3>
+            <div class="history-list" id="historyList">
+                <div class="history-empty">
+                    <p>No history yet</p>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3><i class="fas fa-chart-bar"></i> Stats</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="totalIdentified">0</span>
+                        <span class="stat-label">Identified</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="totalConfidence">0%</span>
+                        <span class="stat-label">Avg Conf</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const imageInput = document.getElementById('imageInput');
+        const uploadContent = document.getElementById('uploadContent');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const removeBtn = document.getElementById('removeBtn');
+        const identifyBtn = document.getElementById('identifyBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const historyList = document.getElementById('historyList');
+        const toastContainer = document.getElementById('toastContainer');
+
+        let selectedFile = null;
+
+        const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="toast-icon fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
+                <span>${message}</span>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function validateFile(file) {
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                return { valid: false, error: 'Invalid format. Use JPG, PNG, WebP, or GIF.' };
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                return { valid: false, error: 'File too large. Max 5MB.' };
+            }
+            return { valid: true };
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/history');
+                const data = await response.json();
+                renderHistory(data.history);
+                document.getElementById('totalIdentified').textContent = data.stats.total;
+                document.getElementById('totalConfidence').textContent = data.stats.avg_confidence + '%';
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function renderHistory(history) {
+            if (!history || history.length === 0) {
+                historyList.innerHTML = '<div class="history-empty"><p>No history yet</p></div>';
+                return;
+            }
+
+            let html = '';
+            history.forEach(item => {
+                html += `
+                    <div class="history-item">
+                        <span class="history-name">${item.flower}</span>
+                        <span class="history-conf">${item.confidence}%</span>
+                    </div>
+                `;
+            });
+            historyList.innerHTML = html;
+        }
+
+        loadHistory();
+
+        dropZone.addEventListener('click', () => imageInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFileSelection(file);
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFileSelection(file);
+        });
+
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetUpload();
+        });
+
+        function handleFileSelection(file) {
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                showToast(validation.error, 'error');
+                return;
+            }
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                uploadContent.style.display = 'none';
+                previewContainer.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetUpload() {
+            selectedFile = null;
+            imageInput.value = '';
+            imagePreview.src = '';
+            uploadContent.style.display = 'flex';
+            previewContainer.style.display = 'none';
+        }
+
+        identifyBtn.addEventListener('click', async () => {
+            if (!selectedFile) {
+                showToast('Please select an image first', 'error');
+                return;
+            }
+
+            identifyBtn.disabled = true;
+            identifyBtn.innerHTML = '<span>Identifying...</span><i class="fas fa-spinner fa-spin"></i>';
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showToast(data.error || 'Prediction failed', 'error');
+                    return;
+                }
+
+                displayResults(data);
+                await loadHistory();
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to identify. Please try again.', 'error');
+            } finally {
+                identifyBtn.disabled = false;
+                identifyBtn.innerHTML = '<span>Identify Flower</span><i class="fas fa-search"></i>';
+            }
+        });
+
+        function displayResults(data) {
+            const isUnknown = data.is_unknown;
+
+            let html = `
+                <div class="result-card ${isUnknown ? 'unknown' : 'matched'}">
+                    <div class="result-badge">
+                        ${isUnknown ? '<i class="fas fa-question-circle"></i> Unknown' : '<i class="fas fa-check-circle"></i> Matched'}
+                    </div>
+                    <h3 class="flower-name">${data.flower}</h3>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${data.confidence}%;"></div>
+                    </div>
+                    <p class="confidence-text">${data.confidence}% confidence</p>
+                    <p class="description">${data.description}</p>
+                </div>
+            `;
+
+            if (data.alternatives && data.alternatives.length > 0) {
+                html += '<div class="alternatives"><h4>Alternatives</h4>';
+                data.alternatives.forEach(alt => {
+                    html += `
+                        <div class="alternative-card">
+                            <span>${alt.flower}</span>
+                            <span class="alt-confidence">${alt.confidence}%</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            resultsContainer.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
